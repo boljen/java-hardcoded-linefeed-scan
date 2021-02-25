@@ -14,50 +14,53 @@ func main() {
 	searchDir := flag.String("dir", ".", "The directory to search")
 	flag.Parse()
 
-	rootDir, err := filepath.Abs(*searchDir)
+	rootDir, err := filepath.Abs(*searchDir) // Turn possible relative directories into absolute paths
 	if err != nil {
 		log.Fatal("Error turning search directory in absolute path: " + err.Error())
 	}
 
-	filesWithLF, err := findHardcodedLF(rootDir);
+	filesWithNewlines, err := findHardcodedNewlines(rootDir)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error finding hardcoded newlines: " + err.Error())
 	}
 
-	if len(filesWithLF) == 0 {
-		fmt.Println("No hardcoded linefeeds have been found")
+	if len(filesWithNewlines) == 0 {
+		fmt.Println("No hardcoded newlines have been found")
 		os.Exit(0)
 	}
 
-	fmt.Println("Found linefeeds in", len(filesWithLF), " files")
+	fmt.Println("Found hardcoded newlines in", len(filesWithNewlines), "files")
 
-	for _, fileResult := range filesWithLF {
-		for _, line := range fileResult.LineFeeds {
-			fmt.Println(fileResult.Filename + ": linefeed on line ", line)
+	for _, fileResult := range filesWithNewlines {
+		for _, line := range fileResult.NewLines {
+			fmt.Println(fileResult.Filename+": linefeed on line ", line)
 		}
 	}
-	os.Exit(-1)
+	os.Exit(1)
 }
 
-func findHardcodedLF(rootDir string) ([]FileResults, error) {
+func findHardcodedNewlines(rootDir string) ([]FileResults, error) {
 	files, err := getJavaSourceFiles(rootDir)
 	if err != nil {
 		return nil, err
 	}
 
-	results := []FileResults{}
+	results := make([]FileResults, 0)
 
 	for _, file := range files {
-		result, err := findLineFeedsInFile(file)
+		newLines, err := findHardcodedNewlinesInFile(file)
 		if err != nil {
 			return nil, err
 		}
 
-		result.Filename = result.Filename[len(rootDir):]
-
-		if len(result.LineFeeds) > 0 {
-			results = append(results, *result)
+		if len(newLines) == 0 {
+			continue
 		}
+
+		results = append(results, FileResults{
+			Filename: file[len(rootDir):],
+			NewLines: newLines,
+		})
 	}
 
 	return results, nil
@@ -92,30 +95,26 @@ func getJavaSourceFiles(rootDir string) ([]string, error) {
 
 type FileResults struct {
 	Filename string
-	LineFeeds []int
+	NewLines []int
 }
 
-func findLineFeedsInFile(filepath string) (*FileResults, error) {
+func findHardcodedNewlinesInFile(filepath string) ([]int, error) {
 
 	file, err := os.Open(filepath)
 	if err != nil {
-		return nil, errors.New("Failed opening file for line feeds: " + err.Error())
+		return nil, errors.New("Failed opening file: " + err.Error())
 	}
 	defer file.Close()
 
 	filedata, err := ioutil.ReadAll(file)
 	if err != nil {
-		return nil, errors.New("Failed reading data for line feeds: " + err.Error())
+		return nil, errors.New("Failed reading data from file: " + err.Error())
 	}
 
-	linefeeds := findLinefeedInData(filedata)
-	return &FileResults{
-		Filename: filepath,
-		LineFeeds: linefeeds,
-	}, nil
+	return findHardcodedNewlineInData(filedata), nil
 }
 
-func findLinefeedInData(filedata []byte) ([]int) {
+func findHardcodedNewlineInData(filedata []byte) []int {
 	linefeeds := []int{}
 
 	lineNumber := 1
@@ -131,9 +130,9 @@ func findLinefeedInData(filedata []byte) ([]int) {
 				continue
 			}
 
-// 			if i >= 2 && filedata[i-1] == 'r' && filedata[i-2] == '\\' {
-// 				continue
-// 			}
+			// 			if i >= 2 && filedata[i-1] == 'r' && filedata[i-2] == '\\' {
+			// 				continue
+			// 			}
 
 			linefeeds = append(linefeeds, lineNumber)
 		}
