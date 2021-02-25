@@ -1,4 +1,4 @@
-name: Example Check
+name: Hardcoded Newline Check
 
 on: [ push ]
 
@@ -10,5 +10,5 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '^1.15.2' # The Go version to download (if necessary) and use.
-      - run: go install github.com/boljen/java-hardcoded-linefeed-scan
+      - run: go get github.com/boljen/java-hardcoded-linefeed-scan
       - run: java-hardcoded-linefeed-scan
