@@ -131,9 +131,9 @@ func findLinefeedInData(filedata []byte) ([]int) {
 				continue
 			}
 
-			if i >= 2 && filedata[i-1] == 'r' && filedata[i-2] == '\\' {
-				continue
-			}
+// 			if i >= 2 && filedata[i-1] == 'r' && filedata[i-2] == '\\' {
+// 				continue
+// 			}
 
 			linefeeds = append(linefeeds, lineNumber)
 		}
