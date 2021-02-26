@@ -33,7 +33,7 @@ func main() {
 
 	for _, fileResult := range filesWithNewlines {
 		for _, line := range fileResult.NewLines {
-			fmt.Println(fileResult.Filename+": linefeed on line ", line)
+			fmt.Println(fileResult.Filename+": newline on line ", line)
 		}
 	}
 	os.Exit(1)
